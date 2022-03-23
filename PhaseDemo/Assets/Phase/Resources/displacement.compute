@@ -1,0 +1,78 @@
+/*!
+ * @authors Ben Knight (bknight@i3drobotics.com)
+ * @date 2021-05-26
+ * @copyright Copyright (c) I3D Robotics Ltd, 2021
+ * 
+ * @file displacement.compute
+ * @brief Compute shader for depth point cloud
+ */
+
+#pragma kernel GenerateParticles
+
+struct quad_vert
+{
+    float4 position;
+    float2 corner_coordinates;
+    uint particle_id;
+};
+
+uniform StructuredBuffer<float> depth_buffer;
+uniform RWStructuredBuffer<quad_vert> particle_buffer;
+uniform float4x4 camera_p;
+uniform float4x4 camera_p_inv;
+uniform float4x4 camera_v_inv;
+uniform float2 image_size;
+uniform int flip_x;
+uniform int flip_y;
+uniform float scale;
+
+[numthreads(8, 8, 1)]
+void GenerateParticles(uint3 id : SV_DispatchThreadID)
+{
+    // If we're working on an image who's dimensions are not multiples of the thread count (8,8 currently), skip it.
+    if (id.x >= (uint)image_size.x || id.y >= (uint)image_size.y)
+    {
+        return;
+    }
+
+    // Convert the depth value from local space to clip space, to put the final coordinate in clip space.
+    const uint buf_idx = id.y * image_size.x + id.x;
+    const float z = depth_buffer[buf_idx];
+    const float x = id.x / image_size.x * 2.0 - 1.0;
+    const float y = id.y / image_size.y * 2.0 - 1.0;
+    float4 clip_pos = mul(camera_p, float4(0.0, 0.0, z, 1.0));
+    clip_pos.x = x * -flip_x;
+    clip_pos.y = y * flip_y;
+    clip_pos.wz /= clip_pos.w;
+
+    // Unproject the point from clip space back to local space, apply scaling, then reproject into world space.
+    const float4 homogenous_local_pos = mul(camera_p_inv, clip_pos);
+    const float4 local_pos = (homogenous_local_pos / homogenous_local_pos.w) * float4(scale.xxx, 1.0);
+    const float4 world_pos = mul(camera_v_inv, local_pos);
+
+    // Build each vertex of the quad. We don't know where each corner will be yet, so set them all to the same world
+    // position, and mark which corner is which for later scaling in the render shader.
+    quad_vert v1;
+    v1.position = world_pos;
+    v1.corner_coordinates = float2(1.0, 1.0);
+    v1.particle_id = buf_idx;
+    particle_buffer[buf_idx * 4 + 0] = v1;
+
+    quad_vert v2;
+    v2.position = world_pos;
+    v2.corner_coordinates = float2(-1.0, 1.0);
+    v2.particle_id = buf_idx;
+    particle_buffer[buf_idx * 4 + 1] = v2;
+
+    quad_vert v3;
+    v3.position = world_pos;
+    v3.corner_coordinates = float2(-1.0, -1.0);
+    v3.particle_id = buf_idx;
+    particle_buffer[buf_idx * 4 + 2] = v3;
+
+    quad_vert v4;
+    v4.position = world_pos;
+    v4.corner_coordinates = float2(1.0, -1.0);
+    v4.particle_id = buf_idx;
+    particle_buffer[buf_idx * 4 + 3] = v4;
+}

@@ -1,0 +1,12 @@
+TF(0001)
+Settings
+(
+	ModuleName("DigTKMultiGPUMatcherIntegration")
+	Language("English")
+	BaseModules(  )
+)
+Translations
+(
+"Allocating Matcher Memory"="Allocating Matcher Memory"
+"Pure matching time (without File IO) %1% seconds"="Pure matching time (without File IO) %1% seconds"
+)
