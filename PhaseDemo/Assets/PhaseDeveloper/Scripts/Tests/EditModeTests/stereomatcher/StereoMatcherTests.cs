@@ -1,16 +1,14 @@
 using System.Collections;
-using System.Collections.Generic;
 using NUnit.Framework;
-using UnityEngine;
 using UnityEngine.TestTools;
 
-namespace I3DR.Phase.UnityTest
+namespace I3DR.PhaseUnityTests
 {
-    public class StereoCameraTests
+    public class StereoMatcherTests
     {
         // A Test behaves as an ordinary method
         [Test]
-        public void StereoCameraTest_SimplePasses()
+        public void StereoMatcherTest_SimplePasses()
         {
             //TODO
         }
@@ -18,7 +16,7 @@ namespace I3DR.Phase.UnityTest
         // A UnityTest behaves like a coroutine in Play Mode. In Edit Mode you can use
         // `yield return null;` to skip a frame.
         [UnityTest]
-        public IEnumerator StereoCameraTest_WithEnumeratorPasses()
+        public IEnumerator StereoMatcherTest_WithEnumeratorPasses()
         {
             // Use the Assert class to test conditions.
             // Use yield to skip a frame.

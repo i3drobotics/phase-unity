@@ -9,12 +9,9 @@
  * and display depth as point cloud using depth shader. 
  */
 
-using UnityEngine;
 using I3DR.Phase;
-using System.IO;
-using System.Collections;
 
-namespace I3DR.Phase
+namespace I3DR.PhaseUnity
 {
     public class TitaniaCameraController : CameraController
     {

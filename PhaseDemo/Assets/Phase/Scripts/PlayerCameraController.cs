@@ -1,8 +1,17 @@
-using System.Collections;
-using System.Collections.Generic;
+/*!
+ * @authors Ben Knight (bknight@i3drobotics.com)
+ * @date 2021-05-26
+ * @copyright Copyright (c) I3D Robotics Ltd, 2021
+ * 
+ * @file PlayerCameraController.cs
+ * @brief Example using I3DR Stereo Vision Unity API
+ * @details Connect to I3DR stereo cameras, view captured images,
+ * and display depth as point cloud using depth shader. 
+ */
+
 using UnityEngine;
 
-namespace I3DR
+namespace I3DR.PhaseUnity
 {
     public class PlayerCameraController : MonoBehaviour
     {

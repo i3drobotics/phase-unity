@@ -7,14 +7,10 @@
  * @brief Pass data to depth compute shader for displaying point cloud
  */
 
-using System;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using System.Threading;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-namespace I3DR
+namespace I3DR.PhaseUnity
 {
     public class DepthRenderer : MonoBehaviour
     {

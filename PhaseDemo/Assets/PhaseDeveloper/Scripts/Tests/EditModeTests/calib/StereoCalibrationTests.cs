@@ -1,10 +1,10 @@
 using System.Collections;
-using System.Collections.Generic;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
+using I3DR.Phase;
 
-namespace I3DR.Phase.UnityTest
+namespace I3DR.PhaseUnityTests
 {
     public class StereoCalibrationTests
     {

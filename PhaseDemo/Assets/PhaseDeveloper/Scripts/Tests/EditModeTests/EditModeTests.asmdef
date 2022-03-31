@@ -4,7 +4,7 @@
     "references": [
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner",
-        "I3DR.Phase.Unity"
+        "I3DR.PhaseUnity"
     ],
     "includePlatforms": [
         "Editor"
@@ -14,7 +14,7 @@
     "overrideReferences": true,
     "precompiledReferences": [
         "nunit.framework.dll",
-        "i3dr-csphase_core.dll"
+        "phasesharp.dll"
     ],
     "autoReferenced": false,
     "defineConstraints": [

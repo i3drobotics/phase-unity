@@ -1,12 +1,10 @@
 using System.Collections;
-using System.Collections.Generic;
 using NUnit.Framework;
-using UnityEngine;
 using UnityEngine.TestTools;
 using UnityEngine.SceneManagement;
-using UnityEditor.Callbacks;
+using I3DR.PhaseUnity;
 
-namespace I3DR.Phase.UnityTest
+namespace I3DR.PhaseUnityTests
 {
     public class TitaniaControllerTests
     {
@@ -47,7 +45,7 @@ namespace I3DR.Phase.UnityTest
             {
                 get { 
                     if (frameCount > 10){
-                        SceneManager.UnloadScene(SceneManager.GetActiveScene().name);
+                        SceneManager.UnloadSceneAsync(SceneManager.GetActiveScene().name);
                         return true;
                     }
                     return false;
