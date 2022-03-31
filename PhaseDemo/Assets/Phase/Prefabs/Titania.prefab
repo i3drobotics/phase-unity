@@ -46,10 +46,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   exposure: 5000
   downsampleFactor: 1
-  isVirtual: 0
   leftImageDisplayPlane: {fileID: 0}
   rightImageDisplayPlane: {fileID: 0}
   depthImageDisplayPlane: {fileID: 0}
+  isVirtual: 1
+  leftImageFilename: 
+  rightImageFilename: 
+  leftCalibration: 
+  rightCalibration: 
+  firstFrameReady: 0
 --- !u!114 &361329404048948063
 MonoBehaviour:
   m_ObjectHideFlags: 0

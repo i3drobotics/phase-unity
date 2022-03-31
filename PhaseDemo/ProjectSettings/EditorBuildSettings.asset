@@ -6,7 +6,7 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Phase/Scenes/Phase_Demo.unity
+    path: Assets/Phase/Scenes/PhaseUnityDemoScene.unity
     guid: 23cbbe6ae9b42d8458b2b259b37935af
   - enabled: 1
     path: Assets/PhaseDeveloper/Scenes/TitaniaTestScene.unity

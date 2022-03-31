@@ -10,16 +10,16 @@
 using UnityEngine;
 using UnityEditor;
 
-namespace I3DR
+namespace I3DR.PhaseUnity
 {
-    class PhaseAutoBuild
+    class Builder
     {
-        [MenuItem("Build/Phase_Demo")]
+        [MenuItem("PhaseUnity/Build Demo")]
         public static void Build()
         {
             var report = BuildPipeline.BuildPlayer(
-                new[] { "Assets/Phase/Scenes/Phase_Demo.unity" },
-                "../../../install/unity/PhaseDemo/PhaseDemo.exe",
+                new[] { "Assets/Phase/Scenes/PhaseUnityDemoScene.unity" },
+                "../deployment/PhaseDemo/PhaseUnityDemo.exe",
                 BuildTarget.StandaloneWindows64,
                 BuildOptions.None);
             Debug.Log(report);

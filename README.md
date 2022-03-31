@@ -13,4 +13,5 @@ Tested on Unity v2020.3.32f1.
 Will always aim for the package to be tested on the latest LTS version of Unity.
 
 ## Test
-Unit testing is provided for the package that can be run from the [Unity Test Framework](https://docs.unity3d.com/Packages/com.unity.test-framework@1.1/manual/index.html). Download this from the package manager to run tests.
+Unit testing is provided for the package that can be run from the [Unity Test Framework](https://docs.unity3d.com/Packages/com.unity.test-framework@1.1/manual/index.html). Download this from the package manager to run tests.  
+Run tests by selecting `Windows->General->Test Runner` from the Unity menu. Then run the provided Play and Edit tests.

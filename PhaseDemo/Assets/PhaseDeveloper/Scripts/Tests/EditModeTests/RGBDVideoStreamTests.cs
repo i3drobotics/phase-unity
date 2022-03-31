@@ -14,20 +14,16 @@ namespace I3DR.PhaseUnityTests
         [Test]
         public void RGBDVideoStreamTest_SimplePasses()
         {
-            string camera_name = "stereotheatresim";
-            string cal_type = "ros";
-            //string resource_folder = "D:\\Code\\I3DR\\i3dr-intranet\\phase-dev\\resources";
-            string resource_folder = Application.dataPath + "/../../../../resources";
-            string left_yaml = resource_folder + "/test/" + camera_name + "/" + cal_type + "/left.yaml";
-            string right_yaml = resource_folder + "/test/" + camera_name + "/" + cal_type + "/right.yaml";
-            string left_image_file = resource_folder + "/test/" + camera_name + "/left.png";
-            string right_image_file = resource_folder + "/test/" + camera_name + "/right.png";
-            //string out_folder = "D:\\Code\\I3DR\\i3dr-intranet\\phase-dev\\out\\cpp";
-            string out_folder = Application.dataPath + "/../../../../out/unity";
-            string out_rgb_video = out_folder + "/rgb.mp4";
-            string out_depth_video = out_folder + "/depth.avi";
+            string test_folder = Application.temporaryCachePath + "/.phasetest";
+            string data_folder = Application.streamingAssetsPath + "/PhaseSamples";
+            string left_yaml = data_folder + "/left.yaml";
+            string right_yaml = data_folder + "/right.yaml";
+            string left_image_file = data_folder + "/left.png";
+            string right_image_file = data_folder + "/left.png";
+            string out_rgb_video = test_folder + "/rgb.mp4";
+            string out_depth_video = test_folder + "/depth.avi";
 
-            Directory.CreateDirectory(out_folder);
+            Directory.CreateDirectory(test_folder);
 
             int num_of_frames = 1;
 

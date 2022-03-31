@@ -12,6 +12,7 @@
 using UnityEngine;
 using I3DR.Phase;
 using System.Collections;
+using System.IO;
 
 namespace I3DR.PhaseUnity
 {
@@ -20,10 +21,18 @@ namespace I3DR.PhaseUnity
     {
         [SerializeField] public int exposure = 5000;
         [SerializeField] public float downsampleFactor = 1.0f;
-        [SerializeField] public bool isVirtual = false;
         [SerializeField] public GameObject leftImageDisplayPlane;
         [SerializeField] public GameObject rightImageDisplayPlane;
         [SerializeField] public GameObject depthImageDisplayPlane;
+
+        public bool isVirtual = false;
+        [ConditionalHide("isVirtual", true)]
+        public string leftImageFilename;
+        [ConditionalHide("isVirtual", true)]
+        public string rightImageFilename;
+
+        public string leftCalibration;
+        public string rightCalibration;
 
         public bool firstFrameReady;
 
@@ -55,6 +64,26 @@ namespace I3DR.PhaseUnity
             _cameraReadRate = readRate;
         }
 
+        private void Awake()
+        {
+            if (string.IsNullOrWhiteSpace(leftImageFilename))
+            {
+                leftImageFilename = Application.streamingAssetsPath + "/PhaseSamples/left.png";
+            }
+            if (string.IsNullOrWhiteSpace(rightImageFilename))
+            {
+                rightImageFilename = Application.streamingAssetsPath + "/PhaseSamples/right.png";
+            }
+            if (string.IsNullOrWhiteSpace(leftCalibration))
+            {
+                leftCalibration = Application.streamingAssetsPath + "/PhaseSamples/left.yaml";
+            }
+            if (string.IsNullOrWhiteSpace(rightCalibration))
+            {
+                rightCalibration = Application.streamingAssetsPath + "/PhaseSamples/right.yaml";
+            }
+        }
+
         void Start()
         {
             _depthRenderer = GetComponent<DepthRenderer>();
@@ -66,17 +95,6 @@ namespace I3DR.PhaseUnity
 
             bool license_valid = StereoI3DRSGM.isLicenseValid();
             Debug.Log("I3DRSGM license: " + license_valid);
-
-            string resource_folder;
-            if (Application.isEditor)
-            {
-                resource_folder = Application.dataPath + "\\..\\..\\..\\..\\resources\\";
-            }
-            else
-            {
-                resource_folder = Application.dataPath + "..\\..\\..\\resources\\";
-            }
-            Debug.Log(resource_folder);
 
             string camera_name, left_serial, right_serial;
 
@@ -128,9 +146,6 @@ namespace I3DR.PhaseUnity
 
             deviceInfo = new CameraDeviceInfo(left_serial, right_serial, camera_name, _deviceType, _interfaceType);
 
-            string left_yaml = resource_folder + "test\\" + camera_name + "\\ros\\left.yaml";
-            string right_yaml = resource_folder + "test\\" + camera_name + "\\ros\\right.yaml";
-
             StereoMatcherType matcher_type;
             if (license_valid){
                 matcher_type = StereoMatcherType.STEREO_MATCHER_I3DRSGM;
@@ -138,12 +153,52 @@ namespace I3DR.PhaseUnity
                 matcher_type = StereoMatcherType.STEREO_MATCHER_BM;
             }
 
-            _stereoVis = new StereoVision(deviceInfo, matcher_type, left_yaml, right_yaml);
+            if (!File.Exists(leftCalibration))
+            {
+                Debug.LogError("Calibration file does not exist at: " + leftCalibration);
+#if UNITY_EDITOR
+                    UnityEditor.EditorApplication.isPlaying = false;
+#else
+                    UnityEngine.Application.Quit();
+#endif
+                return;
+            }
+            if (!File.Exists(rightCalibration))
+            {
+                Debug.LogError("Calibration file does not exist at: " + rightCalibration);
+#if UNITY_EDITOR
+                    UnityEditor.EditorApplication.isPlaying = false;
+#else
+                    UnityEngine.Application.Quit();
+#endif
+                return;
+            }
+
+            _stereoVis = new StereoVision(deviceInfo, matcher_type, leftCalibration, rightCalibration);
             if (_interfaceType == CameraInterfaceType.INTERFACE_TYPE_VIRTUAL)
             {
+                if (!File.Exists(leftImageFilename))
+                {
+                    Debug.LogError("Image does not exist at: " + leftImageFilename);
+#if UNITY_EDITOR
+                        UnityEditor.EditorApplication.isPlaying = false;
+#else
+                        UnityEngine.Application.Quit();
+#endif
+                    return;
+                }
+                if (!File.Exists(rightImageFilename))
+                {
+                    Debug.LogError("Image does not exist at: " + rightImageFilename);
+#if UNITY_EDITOR
+                        UnityEditor.EditorApplication.isPlaying = false;
+#else
+                        UnityEngine.Application.Quit();
+#endif
+                    return;
+                }
                 _stereoVis.setTestImagePaths(
-                    resource_folder + "test\\" + camera_name + "\\left.png",
-                    resource_folder + "test\\" + camera_name + "\\right.png"
+                    leftImageFilename, rightImageFilename
                 );
             }
 
@@ -272,19 +327,23 @@ namespace I3DR.PhaseUnity
 
         void ReadCameraFrameThreaded()
         {
-            if (_stereoVis.isConnected())
+            if (_stereoVis != null)
             {
-                if (!_readThreadStarted)
+                if (_stereoVis.isConnected())
                 {
-                    _readThreadStarted = true;
-                    _stereoVis.startReadThread();
-                } else
-                {
-                    if (!_stereoVis.isReadThreadRunning())
+                    if (!_readThreadStarted)
                     {
-                        StereoVisionReadResult readResult = _stereoVis.getReadThreadResult();
-                        StartCoroutine(processReadResult(readResult));
-                        _readThreadStarted = false;
+                        _readThreadStarted = true;
+                        _stereoVis.startReadThread();
+                    }
+                    else
+                    {
+                        if (!_stereoVis.isReadThreadRunning())
+                        {
+                            StereoVisionReadResult readResult = _stereoVis.getReadThreadResult();
+                            StartCoroutine(processReadResult(readResult));
+                            _readThreadStarted = false;
+                        }
                     }
                 }
             }
@@ -298,28 +357,34 @@ namespace I3DR.PhaseUnity
                 ReadCameraFrameThreaded();
             }
 
-            if (_stereoVis.isConnected())
+            if (_stereoVis != null)
             {
-                if (exposure != _previousExposure)
+                if (_stereoVis.isConnected())
                 {
-                    _stereoCam.setExposure(exposure);
-                    _previousExposure = exposure;
-                }
-                if (downsampleFactor != _previousDownsampleFactor)
-                {
-                    _stereoVis.setDownsampleFactor(downsampleFactor);
-                    _previousDownsampleFactor = downsampleFactor;
+                    if (exposure != _previousExposure)
+                    {
+                        _stereoCam.setExposure(exposure);
+                        _previousExposure = exposure;
+                    }
+                    if (downsampleFactor != _previousDownsampleFactor)
+                    {
+                        _stereoVis.setDownsampleFactor(downsampleFactor);
+                        _previousDownsampleFactor = downsampleFactor;
+                    }
                 }
             }
         }
 
         private void OnDestroy()
         {
-            if (_stereoVis.isConnected())
+            if (_stereoVis != null)
             {
-                _stereoVis.disconnect();
+                if (_stereoVis.isConnected())
+                {
+                    _stereoVis.disconnect();
+                }
+                _stereoVis.dispose();
             }
-            _stereoVis.dispose();
         }
     }
 }

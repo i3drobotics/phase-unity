@@ -11,9 +11,9 @@ using UnityEngine;
 using UnityEditor;
 using UnityEditor.TestTools.TestRunner.Api;
 
-namespace I3DR
+namespace I3DR.PhaseUnity
 {
-    class PhaseAutoTest
+    class Tester
     {
         // Playmode causes domain reload that clears callbacks
         // Reregister callbacks on domain reload
@@ -27,7 +27,7 @@ namespace I3DR
             }
         }
 
-        [MenuItem("Window/General/Test Extensions/Run Play Mode Tests")]
+        [MenuItem("PhaseUnity/Tests/Run Play Mode Tests")]
         public static void TestPlayMode()
         {
             var testRunnerApi = ScriptableObject.CreateInstance<TestRunnerApi>();
@@ -38,7 +38,7 @@ namespace I3DR
             testRunnerApi.Execute(new ExecutionSettings(filter));
         }
 
-        [MenuItem("Window/General/Test Extensions/Run Edit Mode Tests")]
+        [MenuItem("PhaseUnity/Tests/Run Edit Mode Tests")]
         public static void TestEditMode()
         {
             var testRunnerApi = ScriptableObject.CreateInstance<TestRunnerApi>();

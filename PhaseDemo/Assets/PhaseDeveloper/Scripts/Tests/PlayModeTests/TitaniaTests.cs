@@ -40,12 +40,16 @@ namespace I3DR.PhaseUnityTests
 
         public class TitaniaCameraControllerMonoBehaviourTest : TitaniaCameraController, IMonoBehaviourTest
         {
+            public TitaniaCameraControllerMonoBehaviourTest() : base()
+            {
+                isVirtual = true;
+            }
+
             private int frameCount;
             public bool IsTestFinished
             {
                 get { 
                     if (frameCount > 10){
-                        SceneManager.UnloadSceneAsync(SceneManager.GetActiveScene().name);
                         return true;
                     }
                     return false;
