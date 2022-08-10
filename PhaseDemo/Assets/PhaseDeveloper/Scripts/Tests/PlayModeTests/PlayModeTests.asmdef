@@ -15,7 +15,7 @@
     "overrideReferences": true,
     "precompiledReferences": [
         "nunit.framework.dll",
-        "phasesharp.dll"
+        "PhaseCSharp.core.dll"
     ],
     "autoReferenced": false,
     "defineConstraints": [
