@@ -3,7 +3,7 @@ using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
 using System.IO;
-using I3DR.Phase;
+using I3DR.Phase.Calib;
 
 namespace I3DR.PhaseUnityTests
 {
