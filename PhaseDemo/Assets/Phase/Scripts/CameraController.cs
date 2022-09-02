@@ -10,7 +10,11 @@
  */
 
 using UnityEngine;
+using I3DR.Phase.StereoCamera;
+using I3DR.Phase.StereoMatcher;
+using I3DR.Phase.Calib;
 using I3DR.Phase;
+using I3DR.Phase.Types;
 using System.Collections;
 using System.IO;
 
@@ -34,8 +38,6 @@ namespace I3DR.PhaseUnity
         public string leftCalibration;
         public string rightCalibration;
 
-        public bool firstFrameReady;
-
         private CameraDeviceType _deviceType;
         private CameraInterfaceType _interfaceType;
         private float _cameraReadRate;
@@ -47,16 +49,25 @@ namespace I3DR.PhaseUnity
         private Material _rightImageMaterial;
         private Material _depthImageMaterial;
 
-        private StereoVision _stereoVis;
         private AbstractStereoCamera _stereoCam;
-        private StereoCameraCalibration _calibration;
+        private AbstractStereoMatcher _stereoMatcher;
+        private StereoCameraCalibration _stereoCalib;
         private DepthRenderer _depthRenderer;
 
+        private bool _firstFrameReady;
+        private bool _newFrameReady;
         private float _readNextActionTime;
         private float _readInterval;
         private bool _readThreadStarted;
+        private bool _matchThreadStarted;
         private int _previousExposure;
         private float _previousDownsampleFactor;
+
+        byte[] latest_left_image;
+        byte[] latest_right_image;
+        byte[] latest_rect_left_image;
+        byte[] latest_rect_right_image;
+        byte[] latest_left_image_rgba;
 
         public CameraController(CameraDeviceType deviceType, CameraInterfaceType interfaceType, float readRate = 10.0f){
             _deviceType = deviceType;
@@ -91,7 +102,8 @@ namespace I3DR.PhaseUnity
             _previousExposure = exposure;
             _previousDownsampleFactor = downsampleFactor;
             _readThreadStarted = false;
-            firstFrameReady = false;
+            _matchThreadStarted = false;
+            _newFrameReady = false;
 
             bool license_valid = StereoI3DRSGM.isLicenseValid();
             Debug.Log("I3DRSGM license: " + license_valid);
@@ -174,16 +186,30 @@ namespace I3DR.PhaseUnity
                 return;
             }
 
-            _stereoVis = new StereoVision(deviceInfo, matcher_type, leftCalibration, rightCalibration);
+            _stereoCalib = StereoCameraCalibration.calibrationFromYAML(leftCalibration, rightCalibration);
+            if (!_stereoCalib.isValid())
+            {
+                Debug.LogError("Calibration is invalid");
+#if UNITY_EDITOR
+                UnityEditor.EditorApplication.isPlaying = false;
+#else
+                UnityEngine.Application.Quit();
+#endif
+                return;
+            }
+
+            _stereoMatcher = StereoMatcher.createStereoMatcher(matcher_type);
+
+            _stereoCam = StereoCamera.createStereoCamera(deviceInfo);
             if (_interfaceType == CameraInterfaceType.INTERFACE_TYPE_VIRTUAL)
             {
                 if (!File.Exists(leftImageFilename))
                 {
                     Debug.LogError("Image does not exist at: " + leftImageFilename);
 #if UNITY_EDITOR
-                        UnityEditor.EditorApplication.isPlaying = false;
+                    UnityEditor.EditorApplication.isPlaying = false;
 #else
-                        UnityEngine.Application.Quit();
+                    UnityEngine.Application.Quit();
 #endif
                     return;
                 }
@@ -191,29 +217,30 @@ namespace I3DR.PhaseUnity
                 {
                     Debug.LogError("Image does not exist at: " + rightImageFilename);
 #if UNITY_EDITOR
-                        UnityEditor.EditorApplication.isPlaying = false;
+                    UnityEditor.EditorApplication.isPlaying = false;
 #else
-                        UnityEngine.Application.Quit();
+                    UnityEngine.Application.Quit();
 #endif
                     return;
                 }
-                _stereoVis.setTestImagePaths(
+                _stereoCam.setTestImagePaths(
                     leftImageFilename, rightImageFilename
                 );
             }
+            
 
             Debug.Log("Connecting to camera...");
-            bool success = _stereoVis.connect();
+            bool success = _stereoCam.connect();
             if (success)
             {
                 Debug.Log("Connected!");
-                int imageHeight = _stereoVis.getHeight();
-                int imageWidth = _stereoVis.getWidth();
-                float hfov = _stereoVis.getHFOV();
+                int imageHeight = _stereoCam.getHeight();
+                int imageWidth = _stereoCam.getWidth();
+                float hfov = _stereoCalib.getHFOV();
 
-                _stereoVis.getCamera(out _stereoCam);
                 _stereoCam.setExposure(exposure);
-                _stereoVis.setDownsampleFactor(downsampleFactor);
+                _stereoCam.setDownsampleFactor(downsampleFactor);
+                _stereoCalib.setDownsampleFactor(downsampleFactor);
 
                 if (leftImageDisplayPlane != null)
                 {
@@ -249,8 +276,7 @@ namespace I3DR.PhaseUnity
                 }
 
                 _depthRenderer.Init(imageWidth, imageHeight, hfov);
-                _stereoVis.getCalibration(out _calibration);
-                _stereoVis.startCapture();
+                _stereoCam.startCapture();
             } else
             {
                 Debug.Log("Failed to connect to camera");
@@ -258,36 +284,37 @@ namespace I3DR.PhaseUnity
             
         }
 
-        IEnumerator processReadResult(StereoVisionReadResult readResult)
+        IEnumerator processReadResult(CameraReadResult readResult)
         {
             if (readResult.valid)
             {
                 Debug.Log("New frame");
-                firstFrameReady = true;
-                int imageWidth = _stereoVis.getWidth();
-                int imageHeight = _stereoVis.getHeight();
+                int imageWidth = _stereoCam.getWidth();
+                int imageHeight = _stereoCam.getHeight();
 
-                byte[] left_image = Utils.flip(readResult.left_image, imageWidth, imageHeight, 3, 1);
-                byte[] right_image = Utils.flip(readResult.right_image, imageWidth, imageHeight, 3, 1);
-                float[] disparity = Utils.flip(readResult.disparity, imageWidth, imageHeight, 1, 1);
+                latest_left_image = readResult.left;
+                latest_right_image = readResult.right;
+
+                byte[] left_image = Utils.flip(readResult.left, imageWidth, imageHeight, 3, 1);
+                byte[] right_image = Utils.flip(readResult.right, imageWidth, imageHeight, 3, 1);
+
+                StereoImagePair rect_pair = _stereoCalib.rectify(readResult.left, readResult.right, imageWidth, imageHeight);
+
+                latest_rect_left_image = rect_pair.left;
+                latest_rect_right_image = rect_pair.right;
+
+                /*byte[] rect_left_image = Utils.flip(readResult.left, imageWidth, imageHeight, 3, 1);
+                byte[] rect_right_image = Utils.flip(readResult.right, imageWidth, imageHeight, 3, 1);*/
 
                 yield return null;
 
                 byte[] left_image_rgba = Utils.bgr2rgba(left_image, imageWidth, imageHeight);
                 byte[] right_image_rgba = Utils.bgr2rgba(right_image, imageWidth, imageHeight);
 
-                yield return null;
+                /*byte[] rect_left_image_rgba = Utils.bgr2rgba(rect_left_image, imageWidth, imageHeight);
+                byte[] rect_right_image_rgba = Utils.bgr2rgba(rect_right_image, imageWidth, imageHeight);*/
 
-                float[] Q = _calibration.getQ();
-                float[] depth = Utils.disparity2Depth(disparity, imageWidth, imageHeight, Q);
-
-                byte[] disp_image = Utils.normaliseDisparity(readResult.disparity, imageWidth, imageHeight);
-
-                byte[] disp_image_rgba = Utils.bgr2rgba(disp_image, imageWidth, imageHeight);
-
-                yield return null;
-
-                _depthRenderer.UpdateBuffers(left_image_rgba, depth);
+                latest_left_image_rgba = left_image_rgba;
 
                 yield return null;
 
@@ -311,6 +338,38 @@ namespace I3DR.PhaseUnity
                     _rightImageTexture.LoadRawTextureData(right_image_rgba);
                     _rightImageTexture.Apply(false);
                 }
+                _newFrameReady = true;
+            }
+            yield return null;
+        }
+
+        IEnumerator processComputeResult(StereoMatcherComputeResult computeResult)
+        {
+            if (computeResult.valid)
+            {
+                int imageWidth = _stereoCam.getWidth();
+                int imageHeight = _stereoCam.getHeight();
+
+                float[] disparity = Utils.flip(computeResult.disparity, imageWidth, imageHeight, 1, 1);
+
+                yield return null;
+
+                byte[] disp_image = Utils.normaliseDisparity(disparity, imageWidth, imageHeight);
+
+                byte[] disp_image_rgba = Utils.bgr2rgba(disp_image, imageWidth, imageHeight);
+
+                yield return null;
+
+                float[] Q = _stereoCalib.getQ();
+                float[] depth = Utils.disparity2Depth(disparity, imageWidth, imageHeight, Q);
+
+                yield return null;
+
+                _depthRenderer.UpdateBuffers(latest_left_image_rgba, depth);
+
+                yield return null;
+
+                
                 if (depthImageDisplayPlane != null)
                 {
                     if (_depthImageTexture == null || _depthImageTexture.width != imageWidth || _depthImageTexture.height != imageHeight)
@@ -327,22 +386,49 @@ namespace I3DR.PhaseUnity
 
         void ReadCameraFrameThreaded()
         {
-            if (_stereoVis != null)
+            if (_stereoCam != null)
             {
-                if (_stereoVis.isConnected())
+                if (_stereoCam.isConnected())
                 {
                     if (!_readThreadStarted)
                     {
                         _readThreadStarted = true;
-                        _stereoVis.startReadThread();
+                        _stereoCam.startReadThread();
                     }
                     else
                     {
-                        if (!_stereoVis.isReadThreadRunning())
+                        if (!_stereoCam.isReadThreadRunning())
                         {
-                            StereoVisionReadResult readResult = _stereoVis.getReadThreadResult();
+                            CameraReadResult readResult = _stereoCam.getReadThreadResult();
                             StartCoroutine(processReadResult(readResult));
                             _readThreadStarted = false;
+                        }
+                    }
+                }
+            }
+
+            if (_newFrameReady)
+            {
+                _newFrameReady = false;
+                if (_stereoMatcher != null)
+                {
+                    int imageWidth = _stereoCam.getWidth();
+                    int imageHeight = _stereoCam.getHeight();
+                    if (!_matchThreadStarted)
+                    {
+                        _matchThreadStarted = true;
+                        _stereoMatcher.startComputeThread(
+                            latest_rect_left_image, latest_rect_right_image,
+                            imageWidth, imageHeight);
+                    }
+                    else
+                    {
+                        if (!_stereoMatcher.isComputeThreadRunning())
+                        {
+                            StereoMatcherComputeResult computeResult = _stereoMatcher.getComputeThreadResult(
+                                imageWidth, imageHeight);
+                            StartCoroutine(processComputeResult(computeResult));
+                            _matchThreadStarted = false;
                         }
                     }
                 }
@@ -357,9 +443,9 @@ namespace I3DR.PhaseUnity
                 ReadCameraFrameThreaded();
             }
 
-            if (_stereoVis != null)
+            if (_stereoCam != null)
             {
-                if (_stereoVis.isConnected())
+                if (_stereoCam.isConnected())
                 {
                     if (exposure != _previousExposure)
                     {
@@ -368,7 +454,8 @@ namespace I3DR.PhaseUnity
                     }
                     if (downsampleFactor != _previousDownsampleFactor)
                     {
-                        _stereoVis.setDownsampleFactor(downsampleFactor);
+                        _stereoCam.setDownsampleFactor(downsampleFactor);
+                        _stereoCalib.setDownsampleFactor(downsampleFactor);
                         _previousDownsampleFactor = downsampleFactor;
                     }
                 }
@@ -377,13 +464,21 @@ namespace I3DR.PhaseUnity
 
         private void OnDestroy()
         {
-            if (_stereoVis != null)
+            if (_stereoCam != null)
             {
-                if (_stereoVis.isConnected())
+                if (_stereoCam.isConnected())
                 {
-                    _stereoVis.disconnect();
+                    _stereoCam.disconnect();
                 }
-                _stereoVis.dispose();
+                _stereoCam.dispose();
+            }
+            if (_stereoCalib != null)
+            {
+                _stereoCalib.dispose();
+            }
+            if (_stereoMatcher != null)
+            {
+                _stereoMatcher.dispose();
             }
         }
     }

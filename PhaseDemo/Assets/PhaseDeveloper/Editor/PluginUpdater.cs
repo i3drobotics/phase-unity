@@ -10,28 +10,27 @@
 using UnityEngine;
 using UnityEditor;
 using UnityEngine.Networking;
-using System;
-using System.Text;
 using System.IO;
-using System.IO.Compression;
+using Ionic.Zip;
 
 namespace I3DR.PhaseUnity
 {
-    class PluginUpdater
+    class PluginDownloader
     {
-        static string phaseVersion = "0.0.1";
+        static string phaseVersion = "0.1.0";
         static UnityWebRequestAsyncOperation request;
 
-        [MenuItem("PhaseUnity/Update Plugins")]
-        public static void UpdatePlugins()
+        [MenuItem("PhaseUnity/Download Plugins")]
+        public static void DownloadPlugins()
         {
-            string url = "https://github.com/i3drobotics/phase-sharp/releases/download/v" + phaseVersion +
-                    "/phase-sharp-v" + phaseVersion + "-windows-x86_64.zip";
-            string zip_file = Application.dataPath + "/Phase/Plugins/x64/phase-sharp-v" + phaseVersion + "-windows-x86_64.zip";
-            string out_folder = Application.dataPath + "/Phase/Plugins/x64";
+            string zip_file = "phase-csharp-v" + phaseVersion + "-windows-x86_64.zip";
+            string url = "https://github.com/i3drobotics/phase-csharp/releases/download/v" + phaseVersion + "/" + zip_file;
+            string plugin_folder = Application.dataPath + "/Phase/Plugins/x64";
+            string zip_filepath = plugin_folder + "/" + zip_file;
+            string zip_out_folder = plugin_folder + "/phase-csharp-zip";
 
             UnityWebRequest www = UnityWebRequest.Get(url);
-            www.downloadHandler = new DownloadHandlerFile(zip_file);
+            www.downloadHandler = new DownloadHandlerFile(zip_filepath);
 
             request = www.SendWebRequest();
 
@@ -42,7 +41,41 @@ namespace I3DR.PhaseUnity
 
             EditorUtility.ClearProgressBar();
 
-            // TODO decompress zip file
+            if (www.responseCode != 200)
+                return;
+
+            // extract zip file
+            using (ZipFile zip = ZipFile.Read(zip_filepath))
+            {
+                foreach (ZipEntry e in zip)
+                {
+                    EditorUtility.DisplayProgressBar("Phase Plugins", "Extracting " + zip_file + "...", 0.9f);
+                    e.Extract(zip_out_folder);
+                }
+            }
+
+            EditorUtility.ClearProgressBar();
+
+            // clean folder
+            foreach (string file in Directory.GetFiles(plugin_folder, "*", SearchOption.TopDirectoryOnly))
+            {
+                EditorUtility.DisplayProgressBar("Phase Plugins", "Updating files ...", 0.9f);
+                File.Delete(file);      
+            }
+
+            // copy plugin files to plugin folder
+            foreach (string file in Directory.GetFiles(zip_out_folder, "*", SearchOption.TopDirectoryOnly))
+            {
+                EditorUtility.DisplayProgressBar("Phase Plugins", "Updating files ...", 0.9f);
+                File.Copy(file, plugin_folder + "/" + Path.GetFileName(file));
+            }
+
+            // delete zip folder
+            Directory.Delete(zip_out_folder, true);
+            // delete zip file
+            File.Delete(zip_filepath);
+
+            EditorUtility.ClearProgressBar();
         }
     }
 

@@ -1,3 +1,5 @@
 i3drsgm*.log
 deployment
 *.zip
+*.vs
+*.sln

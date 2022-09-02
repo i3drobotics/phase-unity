@@ -9,7 +9,7 @@
  * and display depth as point cloud using depth shader. 
  */
 
-using I3DR.Phase;
+using I3DR.Phase.StereoCamera;
 
 namespace I3DR.PhaseUnity
 {
