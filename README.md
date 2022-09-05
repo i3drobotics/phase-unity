@@ -17,3 +17,7 @@ A Unity Editor menu item is also provied for creating a Phase Unity package. Nav
 Unit testing is provided for the package that can be run from the [Unity Test Framework](https://docs.unity3d.com/Packages/com.unity.test-framework@1.1/manual/index.html). Download this from the package manager to run tests.  
 Run tests by selecting `Windows->General->Test Runner` from the Unity menu. Then run the provided Play and Edit tests.  
 Alternatively a Unity Editor manu item is provided which can by selecting `Phase Unity -> Tests -> Run Play Mode Tests` and `Phase Unity -> Tests -> Run Edit Mode Tests`.
+
+## Run
+A unity scene is provided to demonstrate using the virtual Titania camera inside Unity. This can be found in `PhaseDemo/Assets/Phase/Scenes/PhaseUnityDemoScene.unity`. Double click the scene to open it and once opening used the Play button to launch the demo.  
+Alternatively, after building using `Phase Unity -> Build Demo` run the demo application that is created in the `deployment/PhaseDemo` folder named `PhaseUnityDemo.exe`.
