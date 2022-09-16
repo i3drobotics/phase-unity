@@ -17,7 +17,7 @@ namespace I3DR.PhaseUnity
 {
     class PluginDownloader
     {
-        static string phaseVersion = "0.1.0";
+        static string phaseVersion = "0.1.1-1";
         static UnityWebRequestAsyncOperation request;
 
         [MenuItem("PhaseUnity/Download Plugins")]
