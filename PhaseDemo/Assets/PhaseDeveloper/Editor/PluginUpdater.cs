@@ -76,6 +76,11 @@ namespace I3DR.PhaseUnity
             File.Delete(zip_filepath);
 
             EditorUtility.ClearProgressBar();
+
+            bool restart = EditorUtility.DisplayDialog("Phase Plugins", "Phase plugins updated. Unity editor must be restarted for plugins to be reloaded. Would you like to restart now?", "Restart", "Cancel");
+            if (restart){
+                EditorApplication.OpenProject(Directory.GetCurrentDirectory());
+            }
         }
     }
 
