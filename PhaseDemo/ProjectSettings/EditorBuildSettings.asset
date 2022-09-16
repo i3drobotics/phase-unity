@@ -11,4 +11,6 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/PhaseDeveloper/Scenes/TitaniaTestScene.unity
     guid: ebd1e59f26804814db09c3ad2781fa39
-  m_configObjects: {}
+  m_configObjects:
+    com.unity.addressableassets: {fileID: 11400000, guid: f21f72d611a4b5045a2e937b07bff193,
+      type: 2}

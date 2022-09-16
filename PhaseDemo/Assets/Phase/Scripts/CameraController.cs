@@ -17,6 +17,7 @@ using I3DR.Phase;
 using I3DR.Phase.Types;
 using System.Collections;
 using System.IO;
+using System;
 
 namespace I3DR.PhaseUnity
 {
@@ -31,12 +32,17 @@ namespace I3DR.PhaseUnity
 
         public bool isVirtual = false;
         [ConditionalHide("isVirtual", true)]
-        public string leftImageFilename;
+        public Texture2D virtualLeftImage;
         [ConditionalHide("isVirtual", true)]
-        public string rightImageFilename;
+        public Texture2D virtualRightImage;
 
-        public string leftCalibration;
-        public string rightCalibration;
+        public TextAsset leftCalibrationFile;
+        public TextAsset rightCalibrationFile;
+
+        private string leftImageFilename;
+        private string rightImageFilename;
+        private string leftCalibration;
+        private string rightCalibration;
 
         private CameraDeviceType _deviceType;
         private CameraInterfaceType _interfaceType;
@@ -77,22 +83,35 @@ namespace I3DR.PhaseUnity
 
         private void Awake()
         {
-            if (string.IsNullOrWhiteSpace(leftImageFilename))
+            string sampleFolder = Application.streamingAssetsPath + "/PhaseSamples";
+            if (!Directory.Exists(sampleFolder))
             {
-                leftImageFilename = Application.streamingAssetsPath + "/PhaseSamples/left.png";
+                Directory.CreateDirectory(sampleFolder);
             }
-            if (string.IsNullOrWhiteSpace(rightImageFilename))
+            if (isVirtual)
             {
-                rightImageFilename = Application.streamingAssetsPath + "/PhaseSamples/right.png";
+                leftImageFilename = sampleFolder+ "/left.png";
+                rightImageFilename = sampleFolder + "/right.png";
+                SaveTextureAsPNG(virtualLeftImage, leftImageFilename);
+                SaveTextureAsPNG(virtualRightImage, rightImageFilename);
             }
-            if (string.IsNullOrWhiteSpace(leftCalibration))
-            {
-                leftCalibration = Application.streamingAssetsPath + "/PhaseSamples/left.yaml";
-            }
-            if (string.IsNullOrWhiteSpace(rightCalibration))
-            {
-                rightCalibration = Application.streamingAssetsPath + "/PhaseSamples/right.yaml";
-            }
+            leftCalibration = sampleFolder + "/left.yaml";
+            rightCalibration = sampleFolder + "/right.yaml";
+            SaveTextAsset(leftCalibrationFile, leftCalibration);
+            SaveTextAsset(rightCalibrationFile, rightCalibration);
+        }
+
+        private static void SaveTextureAsPNG(Texture2D texture, string path)
+         {
+             byte[] bytes = texture.EncodeToPNG();
+             File.WriteAllBytes(path, bytes);
+         }
+
+        private static void SaveTextAsset(TextAsset textAsset, string path)
+        {
+            StreamWriter writer = new(path, true);
+            writer.Write(textAsset.text);
+            writer.Close();
         }
 
         void Start()
