@@ -17,14 +17,14 @@ namespace I3DR.PhaseUnity
 {
     class PluginDownloader
     {
-        static string phaseVersion = "0.1.1-1";
+        static string phasecsharpVersion = "0.2.0";
         static UnityWebRequestAsyncOperation request;
 
         [MenuItem("PhaseUnity/Download Plugins")]
         public static void DownloadPlugins()
         {
-            string zip_file = "phase-csharp-v" + phaseVersion + "-windows-x86_64.zip";
-            string url = "https://github.com/i3drobotics/phase-csharp/releases/download/v" + phaseVersion + "/" + zip_file;
+            string zip_file = "phase-csharp-v" + phasecsharpVersion + "-windows-x86_64.zip";
+            string url = "https://github.com/i3drobotics/phase-csharp/releases/download/v" + phasecsharpVersion + "/" + zip_file;
             string plugin_folder = Application.dataPath + "/Phase/Plugins/x64";
             string zip_filepath = plugin_folder + "/" + zip_file;
             string zip_out_folder = plugin_folder + "/phase-csharp-zip";
