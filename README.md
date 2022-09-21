@@ -7,7 +7,7 @@ Unity package for using I3DR's Phase library in Unity. This uses the [Phase CSha
 ### Unity
 This project aims to be tested on the latest LTS version of Unity. At time of writing the Unity version used by this project is v2021.3.9f1.
 ### Phase CSharp
-Phase CSharp library v0.1.1-1 is required. A Unity Editor menu item is provided to automically download and setup the required library. After launching the project in the Unity Editor, navigate the menu toolbar at the top and select `Phase Unity -> Download Plugins`.
+Phase CSharp library v0.2.0 is required. A Unity Editor menu item is provided to automically download and setup the required library. After launching the project in the Unity Editor, navigate the menu toolbar at the top and select `Phase Unity -> Download Plugins`.
 
 ## Build
 A Unity Editor menu item is provided for building the Phase Unity demo. After launching the project in the Unity Editor, navigate to the menu toolbar at the top and select `Phase Unity -> Build Demo`.  
